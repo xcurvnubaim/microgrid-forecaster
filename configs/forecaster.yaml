@@ -1,0 +1,34 @@
+# Forecaster configuration. Env vars (MGF_*) override these at runtime.
+
+# Chronos-2 is zero-shot: nothing is trained or saved as weights.
+# evaluate  -> hold out CSV tail, report accuracy   (forecaster evaluate)
+# production-> serve live forecasts                  (forecaster serve / predict)
+mode: production
+
+artifact_dir: artifacts          # evaluation reports (no weights)
+forecast_log: null               # optional JSONL path, e.g. artifacts/forecasts.jsonl
+
+data:
+  pv_xlsx:     /home/xcurv/teep-taiwan/data/PV_2025-12-01_2026-03-31.xlsx
+  ecmwf_csv:   /home/xcurv/teep-taiwan/data/ecmwf-ifs.csv
+  # demand is forecast together with PV; SOC remains optional/future:
+  soc_csv:     /home/xcurv/teep-taiwan/data/SOC data.csv
+  demand_xlsx: /home/xcurv/teep-taiwan/data/Total Load (net load)_2025-12-01_2026-04-30.xlsx
+
+model:
+  model_id: "autogluon/chronos-2-small"   # Chronos-2 foundation model (zero-shot)
+  context_length: 512
+  series_cols: ["pv_avg", "demand"]
+  horizon_h: 24                            # scheduled/default horizon; API may override 1..168
+  train_start: "2025-12-01"
+  train_end: "2026-03-31"
+  holdout_cutoff: "2026-03-29 23:59:59"   # <= train, > held out for MAE scoring
+  mae_gate: null                          # set a float to fail training if MAE too high
+
+redis:
+  enabled: false                          # HTTP-only by default; no Redis server required
+  url: redis://localhost:6379/0
+  channel: "forecaster:load"
+
+schedule:
+  cron: "7 * * * *"     # hourly at :07

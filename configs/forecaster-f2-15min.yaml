@@ -1,0 +1,37 @@
+# F2 15-minute forecaster configuration.
+#
+# Targets PV and demand on a 15-minute grid over a 24-hour horizon (96 points)
+# using the existing interpolated shortwave-radiation trajectory from the
+# processed PV candidate as the exogenous covariate (assumed-known weather).
+# See the 15-Minute Forecast Resolution Migration Plan.
+
+mode: production
+
+artifact_dir: artifacts
+forecast_log: null
+
+data:
+  pv_xlsx:     /home/xcurv/teep-taiwan/data/PV_2025-12-01_2026-03-31.xlsx
+  ecmwf_csv:   /home/xcurv/teep-taiwan/data/ecmwf-ifs.csv
+  soc_csv:     /home/xcurv/teep-taiwan/data/SOC data.csv
+  demand_xlsx: /home/xcurv/teep-taiwan/data/Total Load (net load)_2025-12-01_2026-04-30.xlsx
+  # F2 weather feature: existing interpolated 15-min shortwave radiation.
+  radiation_csv: /home/xcurv/teep-taiwan/data/processed/pv_15min_chronos_reconstruction_candidate.csv
+  radiation_column: shortwave_radiation_wm2
+
+model:
+  model_id: "autogluon/chronos-2-small"
+  context_length: 512          # 512 quarter-hour steps = 5 days 8 hours
+  series_cols: ["pv_avg", "demand"]
+  horizon_h: 24
+  target_frequency_h: 0.25     # 15-minute forecast targets (96 points)
+  train_start: "2025-12-01"
+  train_end: "2026-03-31"
+  holdout_cutoff: "2026-03-29 23:59:59"
+  mae_gate: null
+
+redis:
+  enabled: false
+
+schedule:
+  cron: "7 * * * *"

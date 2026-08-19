@@ -1,0 +1,32 @@
+# F3 corrected 15-minute forecast study.
+#
+# The service currently supports one shared model.context_length. The F3 cache
+# generator must add separate per-target contexts before this configuration is
+# used for the benchmark: PV 8192 native steps, demand 500 native steps.
+
+mode: production
+artifact_dir: artifacts
+forecast_log: null
+
+data:
+  pv_xlsx: /home/xcurv/teep-taiwan/data/PV_2025-12-01_2026-03-31.xlsx
+  ecmwf_csv: /home/xcurv/teep-taiwan/data/ecmwf-ifs.csv
+  soc_csv: /home/xcurv/teep-taiwan/data/SOC data.csv
+  demand_xlsx: /home/xcurv/teep-taiwan/data/Total Load (net load)_2025-12-01_2026-04-30.xlsx
+
+model:
+  model_id: autogluon/chronos-2-small
+  horizon_h: 24
+  target_frequency_h: 0.25
+  series_cols: [pv_avg, demand]
+  # Placeholder shared value for current schema. Do not call this F3-compliant
+  # until the generator uses target-specific contexts below.
+  context_length: 512
+  pv_context_length: 8192
+  demand_context_length: 500
+
+redis:
+  enabled: false
+
+schedule:
+  cron: "7 * * * *"
