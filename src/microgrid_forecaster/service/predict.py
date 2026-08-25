@@ -52,9 +52,15 @@ class Predictor:
 
     @staticmethod
     def _series_by_target(series_hist: pd.DataFrame, target: str) -> dict[str, pd.Series]:
-        return {
-            target: series_hist.xs(target, level="series_id")["value"]
-        }
+        values = series_hist.xs(target, level="series_id")["value"].copy()
+        index = pd.DatetimeIndex(values.index)
+        if index.freq is None:
+            inferred = index.inferred_freq
+            if inferred is None:
+                raise ValueError(f"forecast context for {target} has no regular frequency")
+            index = pd.DatetimeIndex(index, freq=inferred)
+        values.index = index
+        return {target: values}
 
     def predict(
         self,

@@ -36,9 +36,11 @@ SPLITS = {
 EXCLUDE_GAPS = ["2026-02-04"]
 
 
-def _load_series() -> tuple[pd.Series, pd.Series]:
-    pv = pd.read_csv(PROCESSED_PV, parse_dates=["timestamp"])
-    demand = pd.read_csv(PROCESSED_DEMAND, parse_dates=["timestamp"])
+def _load_series(
+    pv_path: Path = PROCESSED_PV, demand_path: Path = PROCESSED_DEMAND
+) -> tuple[pd.Series, pd.Series]:
+    pv = pd.read_csv(pv_path, parse_dates=["timestamp"])
+    demand = pd.read_csv(demand_path, parse_dates=["timestamp"])
     return (
         pd.Series(pv["pv_kw"].to_numpy(), index=pv["timestamp"]).sort_index(),
         pd.Series(demand["demand_kw"].to_numpy(), index=demand["timestamp"]).sort_index(),
@@ -67,6 +69,8 @@ def main() -> int:
     parser.add_argument("--config", default="configs/forecaster-f3-15min-corrected.yaml")
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--source-id", default="islanded_72h_f3_15min_corrected")
+    parser.add_argument("--pv-path", type=Path, default=PROCESSED_PV)
+    parser.add_argument("--demand-path", type=Path, default=PROCESSED_DEMAND)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
@@ -79,7 +83,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     jsonl_path = out_dir / "forecasts.jsonl"
     manifest_path = out_dir / "forecast_manifest.json"
-    pv, demand = _load_series()
+    pv, demand = _load_series(args.pv_path, args.demand_path)
     service = Service(cfg)
     existing = set()
     if args.resume and jsonl_path.exists():
